@@ -31,14 +31,14 @@ pipeline {
         stage('Terraform Plan') {
             steps {
                 // Execute Terraform plan
-                bat 'terraform plan -out=tfplan'
+                bat 'terraform plan -var-file="terraform.tfvars" -out=tfplan'
             }
         }
         
         stage('Terraform Apply') {
             steps {
                 // Apply Terraform changes
-                bat 'terraform apply -auto-approve tfplan'
+                bat 'terraform apply -var-file="terraform.tfvars" -auto-approve tfplan'
             }
         }
             }
