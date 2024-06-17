@@ -20,14 +20,6 @@ pipeline {
             }
         }
 
-        stage('Install Terraform') {
-            steps {
-                // Download and install Terraform
-                bat 'curl -o terraform.zip https://releases.hashicorp.com/terraform/0.15.5/terraform_0.15.5_windows_amd64.zip'
-                bat 'Expand-Archive -Path terraform.zip -DestinationPath C:\\Terraform'
-                bat 'Set-Location C:\\Terraform'
-            }
-        }
 
          stage('Terraform Init') {
             steps {
