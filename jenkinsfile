@@ -1,14 +1,13 @@
 pipeline {
-    parameters {
-        booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
-    }
+    agent any
 
     environment {
         AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+
+        TF_VAR_region = 'us-west-1'
     }
 
-    agent any
 
     stages {
         stage('Checkout') {
@@ -21,41 +20,40 @@ pipeline {
             }
         }
 
-        stage('Plan') {
+        stage('Install Terraform') {
             steps {
-                script {
-                    dir('terraform') {
-                        bat 'terraform init'
-                        bat 'terraform plan -out tfplan'
-                        bat 'terraform show -no-color tfplan > tfplan.txt'
-                    }
-                }
+                // Download and install Terraform
+                bat 'curl -o terraform.zip https://releases.hashicorp.com/terraform/0.15.5/terraform_0.15.5_windows_amd64.zip'
+                bat 'Expand-Archive -Path terraform.zip -DestinationPath C:\\Terraform'
+                bat 'Set-Location C:\\Terraform'
             }
         }
 
-        stage('Approval') {
-            when {
-                not {
-                    equals expected: true, actual: params.autoApprove
-                }
-            }
+         stage('Terraform Init') {
             steps {
-                script {
-                    def plan = readFile 'terraform/tfplan.txt'
-                    input message: 'Do you want to apply the plan?',
-                    parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
-                }
+                // Initialize Terraform
+                bat 'terraform init'
             }
         }
-
-        stage('Apply') {
+        
+        stage('Terraform Plan') {
             steps {
-                script {
-                    dir('terraform') {
-                        bat 'terraform apply -auto-approve tfplan'
-                    }
-                }
+                // Execute Terraform plan
+                bat 'terraform plan -out=tfplan'
             }
+        }
+        
+        stage('Terraform Apply') {
+            steps {
+                // Apply Terraform changes
+                bat 'terraform apply -auto-approve tfplan'
+            }
+        }
+            }
+                post {
+        always {
+            // Cleanup
+            cleanWs()
         }
     }
 }
