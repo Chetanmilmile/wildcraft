@@ -1,8 +1,11 @@
-module "network" {
-  source               = "./network"
-  vpc_cidr             = var.vpc_cidr
-  vpc_name             = var.vpc_name
-  cidr_public_subnet   = var.cidr_public_subnet
-  eu_availability_zone = var.eu_availability_zone
-  cidr_private_subnet  = var.cidr_private_subnet
+provider "aws" {
+    region = "us-east-1"  
+}
+
+resource "aws_instance" "foo" {
+  ami           = "ami-05fa00d4c63e32376" # us-west-2
+  instance_type = "t2.micro"
+  tags = {
+      Name = "TF-Instance"
+  }
 }

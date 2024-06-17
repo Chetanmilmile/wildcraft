@@ -1,68 +1,54 @@
 pipeline {
-    agent any
 
+    parameters {
+        booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
+    } 
     environment {
-        AWS_CREDENTIALS_ID = 'aws-credential-chetan'  // Replace with your AWS credentials ID in Jenkins
-        GITHUB_CREDENTIALS_ID = 'GitHub_Credentials'  // Replace with your GitHub credentials ID in Jenkins
-        TERRAFORM_VERSION = '0.15.5'  // Replace with the Terraform version you are using
-        TF_VAR_aws_access_key = credentials('AWS-ACCESS_KEY')
-        TF_VAR_aws_secret_key = credentials('AWS_ACCESS_KEY_SECRET')
-        TF_BACKEND_CONFIG = '-backend-config="bucket=my-tf-state-bucket" -backend-config="key=terraform.tfstate" -backend-config="region=us-west-2"'  // Update your backend config if needed
+        AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
+        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
     }
 
+   agent  any
     stages {
-        stage('Checkout') {
+        stage('checkout') {
             steps {
-                checkout([
-                    $class: 'GitSCM', 
-                    branches: [[name: '*/main']],  // Replace 'main' with your branch name
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/Chetanmilmile/wildcraft.git',  // Replace with your GitHub repo URL
-                        credentialsId: GITHUB_CREDENTIALS_ID
-                    ]]
-                ])
+                 script{
+                        dir("terraform")
+                        {
+                            git "https://github.com/yeshwanthlm/Terraform-Jenkins.git"
+                        }
+                    }
+                }
+            }
+
+        stage('Plan') {
+            steps {
+                sh 'pwd;cd terraform/ ; terraform init'
+                sh "pwd;cd terraform/ ; terraform plan -out tfplan"
+                sh 'pwd;cd terraform/ ; terraform show -no-color tfplan > tfplan.txt'
             }
         }
+        stage('Approval') {
+           when {
+               not {
+                   equals expected: true, actual: params.autoApprove
+               }
+           }
 
-        stage('Install Terraform') {
-            steps {
-                sh '''
-                    curl -O https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-                    unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-                    sudo mv terraform /usr/local/bin/
-                '''
-            }
-        }
+           steps {
+               script {
+                    def plan = readFile 'terraform/tfplan.txt'
+                    input message: "Do you want to apply the plan?",
+                    parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
+               }
+           }
+       }
 
-        stage('Terraform Init') {
+        stage('Apply') {
             steps {
-                sh 'terraform init ${TF_BACKEND_CONFIG}'
-            }
-        }
-
-        stage('Terraform Plan') {
-            steps {
-                sh 'terraform plan -out=tfplan'
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                input 'Apply Terraform changes?'
-                sh 'terraform apply tfplan'
+                sh "pwd;cd terraform/ ; terraform apply -input=false tfplan"
             }
         }
     }
 
-    post {
-        always {
-            cleanWs()
-        }
-        success {
-            echo 'Terraform apply successful!'
-        }
-        failure {
-            echo 'Terraform apply failed!'
-        }
-    }
-}
+  }
