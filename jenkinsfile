@@ -15,7 +15,7 @@ pipeline {
                  script{
                         dir("terraform")
                         {
-                            git "https://github.com/Chetanmilmile/wildcraft.git"
+                            git branch: 'main', credentialsId: 'GITHUB-CREDENTIALS', url: 'https://github.com/Chetanmilmile/wildcraft.git'
                         }
                     }
                 }
