@@ -1,11 +1,8 @@
-provider "aws" {
-  region = "us-east-1" # Update with your desired region
-}
-
-resource "aws_vpc" "my_vpc" {
-  cidr_block       = "10.0.0.0/16" # Update with your desired CIDR block
-
-  tags = {
-    Name = "my-vpc"
-  }
+module "network" {
+  source               = "./network"
+  vpc_cidr             = var.vpc_cidr
+  vpc_name             = var.vpc_name
+  cidr_public_subnet   = var.cidr_public_subnet
+  eu_availability_zone = var.eu_availability_zone
+  cidr_private_subnet  = var.cidr_private_subnet
 }
