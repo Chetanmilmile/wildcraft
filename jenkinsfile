@@ -15,7 +15,7 @@ pipeline {
                  script{
                         dir("terraform")
                         {
-                            git "https://github.com/Chetanmilmile/dev_pro_1.git"
+                            git "https://github.com/Chetanmilmile/wildcraft.git"
                         }
                     }
                 }
